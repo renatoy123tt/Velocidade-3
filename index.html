@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speed Test</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #0b0b0b;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 420px;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      color: #00e5ff;
+    }
+
+    .circle {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      border: 6px solid #00e5ff;
+      margin: 0 auto 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 26px;
+      font-weight: bold;
+    }
+
+    .results {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .results div {
+      margin: 6px 0;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      border-radius: 50px;
+      border: none;
+      font-size: 16px;
+      font-weight: bold;
+      background: #00e5ff;
+      color: #000;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .status {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app">
+    <h1>Speed Test</h1>
+
+    <div class="circle" id="speed">--</div>
+
+    <div class="results">
+      <div>Download: <span id="download">--</span> Mbps</div>
+      <div>Upload: <span id="upload">--</span> Mbps</div>
+      <div>Ping: <span id="ping">--</span> ms</div>
+    </div>
+
+    <button id="start">INICIAR TESTE</button>
+    <div class="status" id="status">Pronto</div>
+  </div>
+
+<script>
+  const startBtn = document.getElementById('start');
+  const statusEl = document.getElementById('status');
+  const downloadEl = document.getElementById('download');
+  const uploadEl = document.getElementById('upload');
+  const pingEl = document.getElementById('ping');
+  const speedCircle = document.getElementById('speed');
+
+  startBtn.onclick = async () => {
+    startBtn.disabled = true;
+
+    statusEl.textContent = 'Medindo ping...';
+    const ping = await measurePing();
+    pingEl.textContent = ping;
+
+    statusEl.textContent = 'Testando download...';
+    const download = await measureDownload();
+    downloadEl.textContent = download.toFixed(1);
+    speedCircle.textContent = download.toFixed(1);
+
+    statusEl.textContent = 'Testando upload...';
+    const upload = await measureUpload();
+    uploadEl.textContent = upload.toFixed(1);
+
+    statusEl.textContent = 'Teste concluído';
+    startBtn.disabled = false;
+  };
+
+  async function measurePing() {
+    const start = performance.now();
+    await fetch('https://www.google.com/favicon.ico', { cache: 'no-store' });
+    const end = performance.now();
+    return Math.round(end - start);
+  }
+
+  async function measureDownload() {
+    const url = 'https://speed.cloudflare.com/__down';
+    const start = performance.now();
+    const response = await fetch(url, { cache: 'no-store' });
+    const data = await response.arrayBuffer();
+    const end = performance.now();
+
+    const bits = data.byteLength * 8;
+    const seconds = (end - start) / 1000;
+    return (bits / seconds) / 1_000_000;
+  }
+
+  async function measureUpload() {
+    const size = 5 * 1024 * 1024;
+    const buffer = new Uint8Array(size);
+
+    const start = performance.now();
+    await fetch('https://speed.cloudflare.com/__up', {
+      method: 'POST',
+      body: buffer
+    });
+    const end = performance.now();
+
+    const bits = size * 8;
+    const seconds = (end - start) / 1000;
+    return (bits / seconds) / 1_000_000;
+  }
+</script>
+
+</body>
+</html>
